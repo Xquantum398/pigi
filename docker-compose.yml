@@ -1,1 +1,11 @@
+version: '3.8'
 
+services:
+  pigi:
+    build: .               # Aynı klasördeki Dockerfile'ı kullan
+    container_name: pigi
+    ports:
+      - "7860:7860"
+    environment:
+      - API_PASSWORD=Marco123   # ← BURAYI KENDİ GÜÇLÜ ŞİFRENLE DEĞİŞTİR!
+    restart: unless-stopped
