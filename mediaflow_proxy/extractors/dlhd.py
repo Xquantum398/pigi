@@ -43,8 +43,8 @@ class DLHDExtractor(BaseExtractor):
                 newkso_origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
                 newkso_headers = {
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
-                    'Referer': newkso_origin,
-                    'Origin': newkso_origin
+                    'Referer': https://inattv1301,
+                    'Origin': https://inattv1301
                 }
                 logger.info(f"Applied newkso.ru specific headers (fallback) for URL: {url}")
                 logger.debug(f"Headers applied: {newkso_headers}")
@@ -70,7 +70,7 @@ class DLHDExtractor(BaseExtractor):
             if self._cached_base_url:
                 return self._cached_base_url
             try:
-                resp = await self._make_request("https://daddylive.sx/")
+                resp = await self._make_request("https://inattv1301.xyz/")
                 # resp.url is the final URL after redirects
                 base_url = str(resp.url)
                 if not base_url.endswith('/'):
@@ -79,7 +79,7 @@ class DLHDExtractor(BaseExtractor):
                 return base_url
             except Exception:
                 # Fallback to default if request fails
-                return "https://daddylive.sx/"
+                return "https://inattv1301.xyz/"
 
         def extract_channel_id(url):
             match_premium = re.search(r'/premium(\d+)/mono\.m3u8$', url)
