@@ -14,80 +14,94 @@ class DLHDExtractor(BaseExtractor):
 
     async def extract(self, url: str, **kwargs):
         base_url = "https://inattv1301.xyz/"
-        logger.info(f"🔥 Başlıyor - Base: {base_url}")
+        logger.info(f"Base URL: {base_url}")
 
-        channel_id = re.search(r'stream-(\d+)', url)
-        channel_id = channel_id.group(1) if channel_id else None
-        
+        # Channel ID
+        channel_id_match = re.search(r'stream-(\d+)', url, re.IGNORECASE)
+        channel_id = channel_id_match.group(1) if channel_id_match else None
+
         if not channel_id:
-            raise ExtractorError("Channel ID yok")
+            raise ExtractorError("Channel ID bulunamadı")
 
         logger.info(f"Channel ID: {channel_id}")
 
-        # Sadece en kritik endpoint
-        test_url = f"{base_url}player/stream-{channel_id}.php"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36 Edg/147.0.0.0',
-            'Referer': base_url,
-            'Accept': 'text/html,application/xhtml+xml'
-        }
-
+        # Ana akış
         try:
-            logger.info(f"1. Sayfa isteği: {test_url}")
-            resp1 = await self._make_request(test_url, headers=headers, timeout=25)
+            # Player sayfası
+            page_url = f"{base_url}player/stream-{channel_id}.php"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': base_url
+            }
 
-            # Player 2 ara
-            p2 = re.search(r'href=["\']([^"\']+Player[^"\']*)', resp1.text, re.I)
-            if not p2:
-                logger.error("Player 2 linki bulunamadı!")
-                raise ExtractorError("Player 2 yok")
+            resp1 = await self._make_request(page_url, headers=headers)
+            
+            # Player 2
+            p2_match = re.search(r'href=["\']([^"\']+)"[^>]*>.*Player 2', resp1.text, re.I)
+            if not p2_match:
+                raise ExtractorError("Player 2 link bulunamadı")
 
-            p2_url = base_url.rstrip('/') + '/' + p2.group(1).lstrip('/')
-            logger.info(f"2. Player 2 URL: {p2_url}")
-
+            p2_url = base_url.rstrip('/') + '/' + p2_match.group(1).lstrip('/')
             headers['Referer'] = p2_url
-            resp2 = await self._make_request(p2_url, headers=headers, timeout=25)
+
+            resp2 = await self._make_request(p2_url, headers=headers)
 
             # Iframe
-            iframe = re.search(r'<iframe[^>]*src=["\']([^"\']+)', resp2.text, re.I)
-            if not iframe:
-                logger.error("Iframe bulunamadı!")
-                raise ExtractorError("Iframe yok")
+            iframe_match = re.search(r'iframe[^>]+src=["\']([^"\']+)', resp2.text, re.I)
+            if not iframe_match:
+                raise ExtractorError("Iframe bulunamadı")
 
-            iframe_url = iframe.group(1)
-            logger.info(f"3. Iframe URL: {iframe_url}")
+            iframe_url = iframe_match.group(1)
+            logger.info(f"Iframe: {iframe_url}")
 
-            resp3 = await self._make_request(iframe_url, headers=headers, timeout=25)
-            content = resp3.text
+            # Iframe içeriği
+            iframe_resp = await self._make_request(iframe_url, headers=headers)
+            content = iframe_resp.text
 
-            # Server Key Arama (tüm olasılıklar)
-            server_key = None
-            for pattern in [r'server_key["\']?\s*[:=]\s*["\']([^"\']+)', 
-                           r'([a-z0-9-]+)\.d72577a9dd0ec66\.cfd']:
-                m = re.search(pattern, content)
-                if m:
-                    server_key = m.group(1)
-                    break
+            # Server Key Bul (zirve örneğine göre)
+            server_key = self._extract_server_key(content)
 
             if not server_key:
-                logger.error("❌ Server key bulunamadı!")
-                logger.debug(f"Content snippet: {content[:800]}")
-                raise ExtractorError("Server key yok")
+                raise ExtractorError("Server key bulunamadı")
 
-            logger.info(f"✅ Server Key: {server_key}")
+            logger.info(f"Server Key: {server_key}")
 
+            # Final URL (çalışan yapı)
             final_url = f"https://{server_key}.d72577a9dd0ec66.cfd/{server_key}/mono.m3u8"
-            logger.info(f"✅ FINAL URL: {final_url}")
+
+            logger.info(f"✅ Başarılı - Final URL: {final_url}")
 
             return {
                 "destination_url": final_url,
                 "request_headers": {
                     'User-Agent': headers['User-Agent'],
-                    'Referer': iframe_url
+                    'Referer': iframe_url,
+                    'Origin': f"https://{urlparse(iframe_url).netloc}"
                 },
                 "mediaflow_endpoint": self.mediaflow_endpoint,
             }
 
         except Exception as e:
-            logger.error(f"Genel Hata: {type(e).__name__} - {e}")
-            raise ExtractorError(str(e))
+            logger.error(f"Hata: {e}")
+            raise ExtractorError(f"DLHD Error: {str(e)}")
+
+    def _extract_server_key(self, content: str):
+        """zirve örneğine göre server key çıkarma"""
+        # Yöntem 1: server_key direkt
+        m = re.search(r'server_key["\']?\s*[:=]\s*["\']([^"\']+)', content)
+        if m:
+            return m.group(1)
+
+        # Yöntem 2: .d72577a9dd0ec66.cfd olan subdomain
+        m = re.search(r'([a-z0-9-]+)\.d72577a9dd0ec66\.cfd', content)
+        if m:
+            return m.group(1)
+
+        # Yöntem 3: Son çare - herhangi bir kısa kelime (zirve gibi)
+        m = re.search(r'["\']([a-z0-9]{3,15})["\']', content)
+        if m:
+            candidate = m.group(1)
+            if candidate not in ['true', 'false', 'null', 'undefined']:
+                return candidate
+
+        return None
