@@ -53,7 +53,7 @@ class DLHDExtractor(BaseExtractor):
 
             logger.info(f"Server Key bulundu: {server_key}")
 
-            final_url = f"https://{server_key}.d72577a9dd0ec66.cfd/{server_key}/mono.m3u8"
+            final_url = f"https://cyn.d72577a9dd0ec66.cfd/zirve/mono.m3u8"
 
             logger.info(f"✅ Oluşturulan Link: {final_url}")
 
