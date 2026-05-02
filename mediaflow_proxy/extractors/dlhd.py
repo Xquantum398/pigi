@@ -28,8 +28,8 @@ class DLHDExtractor(BaseExtractor):
             player_url = f"{base_url}player/stream-{channel_id}.php"
             
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': base_url
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36 Edg/147.0.0.0',
+                'Referer': https://inattv1301
             }
 
             logger.info(f"İstek atılıyor: {player_url}")
