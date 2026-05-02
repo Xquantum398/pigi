@@ -1,12 +1,12 @@
 import re
 import logging
+from urllib.parse import urlparse
 from mediaflow_proxy.extractors.base import BaseExtractor, ExtractorError
 
 logger = logging.getLogger(__name__)
 
 
 class DLHDExtractor(BaseExtractor):
-
     def __init__(self, request_headers: dict):
         super().__init__(request_headers)
         self.mediaflow_endpoint = "hls_manifest_proxy"
@@ -16,28 +16,27 @@ class DLHDExtractor(BaseExtractor):
         logger.info("DLHD Extractor başlatıldı")
 
         # Channel ID
-        channel_id = re.search(r'stream-(\d+)', url)
-        if not channel_id:
+        channel_match = re.search(r'stream-(\d+)', url)
+        if not channel_match:
             raise ExtractorError("Channel ID bulunamadı")
         
-        channel_id = channel_id.group(1)
+        channel_id = channel_match.group(1)
         logger.info(f"Channel ID: {channel_id}")
 
         try:
-            # Tek seferde player sayfasına git
             player_url = f"{base_url}player/stream-{channel_id}.php"
             
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36 Edg/147.0.0.0',
-                'Referer': https://inattv1301
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+                'Referer': base_url
             }
 
             logger.info(f"İstek atılıyor: {player_url}")
+            
             resp = await self._make_request(player_url, headers=headers, timeout=30)
-
             text = resp.text
 
-            # Server key ara (zirve tarzı)
+            # Server Key Bul
             server_key = None
             match = re.search(r'server_key["\']?\s*[:=]\s*["\']([^"\']+)', text)
             if match:
@@ -53,6 +52,7 @@ class DLHDExtractor(BaseExtractor):
 
             logger.info(f"Server Key bulundu: {server_key}")
 
+            # Dinamik URL (zirve örneğine göre)
             final_url = f"https://cyn.d72577a9dd0ec66.cfd/zirve/mono.m3u8"
 
             logger.info(f"✅ Oluşturulan Link: {final_url}")
@@ -61,7 +61,8 @@ class DLHDExtractor(BaseExtractor):
                 "destination_url": final_url,
                 "request_headers": {
                     'User-Agent': headers['User-Agent'],
-                    'Referer': player_url
+                    'Referer': player_url,
+                    'Origin': base_url.rstrip('/')
                 },
                 "mediaflow_endpoint": self.mediaflow_endpoint,
             }
