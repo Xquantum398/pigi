@@ -11,28 +11,42 @@ class DLHDExtractor(BaseExtractor):
         self.mediaflow_endpoint = "hls_manifest_proxy"
 
     async def extract(self, url: str, **kwargs):
-        # Sadece channel ID çıkar
-        channel_match = re.search(r'stream-(\d+)', url, re.IGNORECASE)
-        if not channel_match:
-            raise ExtractorError("Channel ID bulunamadı")
-        
-        channel_id = channel_match.group(1)
-        logger.info(f"Channel ID: {channel_id}")
+        base_url = "https://inattv1301.xyz/"
+        logger.info(f"DLHD Extractor - URL: {url}")
 
-        # Geçici olarak sabit subdomain + server_key (zirve)
-        # İleride server_key dinamik yapılabilir
-        server_key = "zirve"   # veya "b2", "top1" vs. test edebilirsin
+        # Channel ID / Key çıkarma (yeni ve eski format)
+        channel_id = None
+
+        # 1. channel.html?id=b3 formatı
+        match = re.search(r'id=([a-zA-Z0-9]+)', url)
+        if match:
+            channel_id = match.group(1)
+
+        # 2. Eski stream-123.php formatı
+        if not channel_id:
+            match = re.search(r'stream-(\d+)', url)
+            if match:
+                channel_id = match.group(1)
+
+        if not channel_id:
+            raise ExtractorError("Channel ID bulunamadı")
+
+        logger.info(f"Channel ID/Key: {channel_id}")
+
+        # Şimdilik en çok çalışan server_key'ler
+        # İleride dinamik yapılabilir
+        server_key = "zirve"   # En stabil olanı (senin verdiğin örnek)
 
         final_url = f"https://{server_key}.d72577a9dd0ec66.cfd/{server_key}/mono.m3u8"
 
-        logger.info(f"✅ Oluşturulan URL: {final_url}")
+        logger.info(f"✅ Oluşturulan Stream URL: {final_url}")
 
         return {
             "destination_url": final_url,
             "request_headers": {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': 'https://inattv1301.xyz/',
-                'Origin': 'https://inattv1301.xyz'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+                'Referer': base_url,
+                'Origin': base_url.rstrip('/')
             },
             "mediaflow_endpoint": self.mediaflow_endpoint,
         }
