@@ -27,7 +27,7 @@ class DLHDExtractor(BaseExtractor):
         # Sadece en kritik endpoint
         test_url = f"{base_url}player/stream-{channel_id}.php"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36 Edg/147.0.0.0',
             'Referer': base_url,
             'Accept': 'text/html,application/xhtml+xml'
         }
