@@ -1,9 +1,8 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-RUN rm -rf /var/lib/apt/lists/* \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
 
