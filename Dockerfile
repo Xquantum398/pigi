@@ -10,4 +10,4 @@ RUN git clone https://github.com/Xquantum398/pigi.git .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["sh", "-c", "uvicorn main:app --app-dir /app/mediaflow_proxy --host 0.0.0.0 --port ${PORT:-10000}"]
+CMD ["python", "/app/mediaflow_proxy/run.py"]
